@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup as bs
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -18,18 +19,59 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         print(resp.error)
         return list()
-    print(resp.raw_response.content)
-    return list()
+
+    # Soup object made out of current URL html content
+    soup = bs(resp.raw_response.content, 'html.parser')
+    # Strips the url to only include http: or https:
+    url_protocol = url.split("/")[0]
+    # All anchor tags in current URL
+    a_links = soup.find_all('a')
+    domain = urlparse(url).netloc
+    links = []
+
+    for tag in a_links:
+        # Error handling for anchor with no href attribute
+        try:
+            cur_url = tag['href']
+        except:
+            continue # continue crawling 
+        # if the protocol is missing
+        if (tag['href'][0:2]) == '//':
+            # add protocol to relative link
+            cur_url = url_protocol + tag['href']
+        elif ((tag['href'][0]) == '/'): # else if it is a relative link using the same base url
+            cur_url = domain + tag['href']
+        # elif ((tag['href'][0] != "#") and not (tag['href'].startswith("http") or tag['href'].startswith("https"))):
+        #     cur_url = url + tag['href']
+
+        if is_valid(cur_url):
+            links.append(cur_url)
+
+    # TODO: check domain/paths
+    # *.ics.uci.edu/*
+    # *.cs.uci.edu/*
+    # *.informatics.uci.edu/*
+    # *.stat.uci.edu/*
+    # TODO: check if there is a href
+    # TODO: lxml parsing?
+    # TODO: include or not include php?
+    #print(links)
+
+    return links
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
+
+    # TODO: optimize?
+    valid_domains = ['.ics.uci.edu', '.cs.uci.edu', '.informatics.uci.edu', '.stat.uci.edu']
+    
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        return not re.match(
+        return any(domain in url for domain in valid_domains) and not re.match(
             r".*\.(css|js|bmp|gif|jpe?g|ico"
             + r"|png|tiff?|mid|mp2|mp3|mp4"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
