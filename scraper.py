@@ -1,5 +1,6 @@
 import re
-from urllib.parse import urlparse
+from urllib import robotparser
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
 
 def scraper(url, resp):
@@ -19,14 +20,21 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         print(resp.error)
         return list()
+    
+    # TODO: crawl delay?
+    # TODO: iter.parse
+
+    robots_file = url + '/robots.txt'
+    rp = robotparser.RobotFileParser(robots_file)
+    rp.read()
+    if not rp.can_fetch("IR US24 23141678,14782048", url):
+        return list()
+
 
     # Soup object made out of current URL html content
-    soup = bs(resp.raw_response.content, 'html.parser')
-    # Strips the url to only include http: or https:
-    url_protocol = url.split("/")[0]
+    soup = bs(resp.raw_response.content, 'lxml')
     # All anchor tags in current URL
     a_links = soup.find_all('a')
-    domain = urlparse(url).netloc
     links = []
 
     for tag in a_links:
@@ -34,28 +42,18 @@ def extract_next_links(url, resp):
         try:
             cur_url = tag['href']
         except:
-            continue # continue crawling 
-        # if the protocol is missing
-        if (tag['href'][0:2]) == '//':
-            # add protocol to relative link
-            cur_url = url_protocol + tag['href']
-        elif ((tag['href'][0]) == '/'): # else if it is a relative link using the same base url
-            cur_url = domain + tag['href']
-        # elif ((tag['href'][0] != "#") and not (tag['href'].startswith("http") or tag['href'].startswith("https"))):
-        #     cur_url = url + tag['href']
+            continue # continue to next link
 
-        if is_valid(cur_url):
+        # If href tag is empty string
+        if len(tag['href']) == 0:
+            continue
+        
+        # Join the relative path to the base path to create an absolute path
+        cur_url = urljoin(url, cur_url)
+
+        # TODO: optimize?
+        if rp.can_fetch("IR US24 23141678,14782048", cur_url) and is_valid(cur_url):
             links.append(cur_url)
-
-    # TODO: check domain/paths
-    # *.ics.uci.edu/*
-    # *.cs.uci.edu/*
-    # *.informatics.uci.edu/*
-    # *.stat.uci.edu/*
-    # TODO: check if there is a href
-    # TODO: lxml parsing?
-    # TODO: include or not include php?
-    #print(links)
 
     return links
 
@@ -71,9 +69,9 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        return any(domain in url for domain in valid_domains) and not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
+        return any(domain in url for domain in valid_domains) and (not '#' in url) and not re.match(
+            r".*\.(css|js|bmp|gif|jpe?g|ico|php|r"
+            + r"|png|tiff?|mid|mp2|mp3|mp4|bib"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
