@@ -1,6 +1,10 @@
 import re
-from urllib.parse import urlparse
+from urllib import robotparser
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup as bs
+import time
+
+visited_urls = set()
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -19,14 +23,45 @@ def extract_next_links(url, resp):
     if resp.status != 200:
         print(resp.error)
         return list()
+    
+    # TODO: iter.parse
+    # TODO: optimize robot
+    # TODO: use resp.raw_content.is_redirect??
+    robots_file = url + '/robots.txt'
+    rp = robotparser.RobotFileParser(robots_file)
+    rp.read()
+    if not rp.can_fetch("IR US24 23141678,14782048", url):
+        return list()
+    
+    politeness_delay = rp.crawl_delay("IR US24 23141678,14782048")
+    # respect the crawl delay of the robots.txt
+    if politeness_delay:
+        print(politeness_delay)
+        time.sleep(politeness_delay)
+    
+    # Already visited this URL, avoiding infinite loops
+    if url in visited_urls:
+        return list()
 
-    # Soup object made out of current URL html content
-    soup = bs(resp.raw_response.content, 'html.parser')
-    # Strips the url to only include http: or https:
-    url_protocol = url.split("/")[0]
+    # Maintain a set of previously visited URLs
+    visited_urls.add(url)
+
+    # Soup object made out of current URL HTML content # TODO: check lxml
+    soup = bs(resp.raw_response.content, 'lxml')
+    text = soup.get_text()
+    # Avoid very large files, or traps, and avoid pages with low informational content
+    if len(text) > 99999 or len(text) < 100:
+        return list()
+
+    # Gets the content type of current URL
+    content_type = resp.raw_response.headers['Content-Type']
+
+    # Ignores all pages which are not of type HTML or XML
+    if "text/html" not in content_type and "text/xml" not in content_type:
+        return list()
+    
     # All anchor tags in current URL
     a_links = soup.find_all('a')
-    domain = urlparse(url).netloc
     links = []
 
     for tag in a_links:
@@ -34,28 +69,18 @@ def extract_next_links(url, resp):
         try:
             cur_url = tag['href']
         except:
-            continue # continue crawling 
-        # if the protocol is missing
-        if (tag['href'][0:2]) == '//':
-            # add protocol to relative link
-            cur_url = url_protocol + tag['href']
-        elif ((tag['href'][0]) == '/'): # else if it is a relative link using the same base url
-            cur_url = domain + tag['href']
-        # elif ((tag['href'][0] != "#") and not (tag['href'].startswith("http") or tag['href'].startswith("https"))):
-        #     cur_url = url + tag['href']
+            continue # continue to next link
 
+        # If href tag is empty string
+        if len(tag['href']) == 0:
+            continue
+        
+        # Join the relative path to the base path to create an absolute path
+        cur_url = urljoin(url, cur_url)
+
+        # TODO: optimize?
         if is_valid(cur_url):
             links.append(cur_url)
-
-    # TODO: check domain/paths
-    # *.ics.uci.edu/*
-    # *.cs.uci.edu/*
-    # *.informatics.uci.edu/*
-    # *.stat.uci.edu/*
-    # TODO: check if there is a href
-    # TODO: lxml parsing?
-    # TODO: include or not include php?
-    #print(links)
 
     return links
 
@@ -71,9 +96,9 @@ def is_valid(url):
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
             return False
-        return any(domain in url for domain in valid_domains) and not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
+        return any(domain in url for domain in valid_domains) and (not '#' in url) and not re.match(
+            r".*\.(css|js|bmp|gif|jpe?g|ico|php|r"
+            + r"|png|tiff?|mid|mp2|mp3|mp4|bib"
             + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
             + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
