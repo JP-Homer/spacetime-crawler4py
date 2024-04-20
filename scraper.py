@@ -33,6 +33,8 @@ def extract_next_links(url, resp):
     if not rp.can_fetch("IR US24 23141678,14782048", url):
         return list()
     
+    # TODO: Possible update: make a set of visited domains and only check robots.txt for each
+    # unique domain, every url under that domain will fall under the same robots.txt. cache their object
     politeness_delay = rp.crawl_delay("IR US24 23141678,14782048")
     # respect the crawl delay of the robots.txt
     if politeness_delay:
