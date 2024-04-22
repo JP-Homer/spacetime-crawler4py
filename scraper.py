@@ -1,10 +1,16 @@
 import re
 from urllib import robotparser
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup as bs
+from collections import defaultdict
+from tokenizer import computeWordFrequencies
 import time
 
 visited_urls = set()
+visited_defrags = set()
+longest_info = {"longest_page": "", "longest_page_num": 0}
+stopwords = set(line.strip() for line in open('stopwords.txt'))
+word_frequency = defaultdict(int)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -26,7 +32,7 @@ def extract_next_links(url, resp):
     
     # TODO: iter.parse
     # TODO: optimize robot
-    # TODO: use resp.raw_content.is_redirect??
+    # TODO: use resp.raw_content.is_redirect?? -- "if there were any redirects, the final url is in resp.url instead of the parameter url."
     robots_file = url + '/robots.txt'
     rp = robotparser.RobotFileParser(robots_file)
     rp.read()
@@ -38,8 +44,15 @@ def extract_next_links(url, resp):
     politeness_delay = rp.crawl_delay("IR US24 23141678,14782048")
     # respect the crawl delay of the robots.txt
     if politeness_delay:
-        print(politeness_delay)
         time.sleep(politeness_delay)
+
+    # Splitting URL into fragments, we only care about the defragged url
+    defragged_url, throwaway = urldefrag(url)
+
+    # Counting all unique URLs with the fragment cut off
+    if defragged_url not in visited_defrags:
+        visited_defrags.add(defragged_url)
+
     
     # Already visited this URL, avoiding infinite loops
     if url in visited_urls:
@@ -51,6 +64,17 @@ def extract_next_links(url, resp):
     # Soup object made out of current URL HTML content # TODO: check lxml
     soup = bs(resp.raw_response.content, 'lxml')
     text = soup.get_text()
+    words = text.split()
+    words = [word.lower() for word in words if word.isalnum()]
+    for k, v in computeWordFrequencies(words, stopwords).items():
+        word_frequency[k] += v
+
+    num_words = len(words)
+    if num_words > longest_info["longest_page_num"]:
+        longest_info["longest_page"] = url
+        longest_info["longest_page_num"] = num_words
+
+
     # Avoid very large files, or traps, and avoid pages with low informational content
     if len(text) > 99999 or len(text) < 100:
         return list()
@@ -85,6 +109,7 @@ def extract_next_links(url, resp):
             links.append(cur_url)
 
     return links
+
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
