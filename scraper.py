@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup as bs
 from collections import defaultdict
 from tokenizer import computeWordFrequencies
 import time
+import simhash
 
 visited_urls = set()
 visited_defrags = set()
