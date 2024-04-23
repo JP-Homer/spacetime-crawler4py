@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
-from scraper import visited_defrags, longest_info, word_frequency
+from scraper import visited_defrags, longest_info, word_frequency, subdomains
 
 
 def main(config_file, restart):
@@ -24,6 +24,13 @@ def main(config_file, restart):
             file.write(f"{key} -> {value}\n")
             if counter >= 49:
                 break
+        file.write("4. " + str(len(subdomains)) + "\n")
+        for subdomain in sorted(subdomains):
+            count = 0
+            for defrag in visited_defrags:
+                if (subdomain + ".ics.uci.edu") in defrag:
+                    count += 1
+            file.write("https://" + subdomain + ".ics.uci.edu, " + str(count) + "\n")
 
 
 if __name__ == "__main__":
