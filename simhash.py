@@ -1,6 +1,13 @@
 from hashlib import md5
 
-def simhash(bit_map: dict, tokens: dict):
+def simhash(token_map: dict) -> str:
+    # Generates simhash fingerprint given a map of tokens and their weights (in our case, occurrences in a web page)
+
+    bit_map = dict()
+
+    for word in token_map:
+        bit_map[word] = bin(0xFFFF & int(md5(word.encode()).hexdigest(), 16))[2:].zfill(16) # 16 least significant bits
+    
     vector = [0] * 16 # Vector with 16 zeroes
 
     # Looping through every word in the map {word -> binary}
@@ -8,46 +15,37 @@ def simhash(bit_map: dict, tokens: dict):
         # Looping through every bit in the binary representation of a word
         for i in range(16):
             if(v[i] == "1"):
-                vector[i] += tokens[k]
+                vector[i] += token_map[k]
             else:
-                vector[i] -= tokens[k]
-
-    return vector
-
-
-def get_similarity_score(tokensA: dict, tokensB: dict):
-    '''tokensA and tokensB represent the words with corresponding weights
-    returns similarity score (0-1) by simhashing both dictionaries'''
-
-    # Dictionaries which map {word -> binary representation of hashed word}
-    bit_mapA = dict()
-    bit_mapB = dict()
-
-    for word in tokensA:
-        bit_mapA[word] = bin(0xFFFF & int(md5(word.encode()).hexdigest(), 16))[2:].zfill(16) # 16 least significant bits
-
-    for word in tokensB:
-        bit_mapB[word] = bin(0xFFFF & int(md5(word.encode()).hexdigest(), 16))[2:].zfill(16) # 16 least significant bits
-    
-    vectorA = simhash(bit_mapA, tokensA)
-    vectorB = simhash(bit_mapB, tokensB)
-
-    similarity_count = 0
+                vector[i] -= token_map[k]
 
     for i in range(16):
         # Creating final binary string for both vectors
-        if vectorA[i] > 0:
-            vectorA[i] = 1
+        if vector[i] > 0:
+            vector[i] = "1"
         else:
-            vectorA[i] = 0
-            
-        if vectorB[i] > 0:
-            vectorB[i] = 1
-        else:
-            vectorB[i] = 0
+            vector[i] = "0"
 
+    return "".join(vector) # returns 16-bit fingerprint
+
+
+def get_similarity_score(fpA: str, fpB: str):
+    # Given two fingerprints, generate a similarity score
+    
+    similarity_count = 0
     for i in range(16):
-        if vectorA[i] == vectorB[i]: # if bit i is the same in both vectors
+        if fpA[i] == fpB[i]: # if bit i is the same in both vectors
             similarity_count += 1
 
     return similarity_count / 16 # number of same bits in the same place / 16 bits
+
+
+if __name__ == "__main__":
+    t1 = {"hello": 2, "goodbye": 1, "yellow": 3, "new": 5}
+    t2 = {"hello": 2, "yellow": 3}
+
+    fingerprintA = simhash(t1)
+    fingerprintB = simhash(t2)
+    print(fingerprintA, fingerprintB)
+
+    print(get_similarity_score(fingerprintA, fingerprintB))

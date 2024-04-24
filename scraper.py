@@ -4,15 +4,17 @@ from urllib.parse import urlparse, urljoin, urldefrag
 from bs4 import BeautifulSoup as bs
 from collections import defaultdict
 from tokenizer import computeWordFrequencies
-from simhash import get_similarity_score
+from simhash import get_similarity_score, simhash
+import time
 
 visited_urls = set()
 visited_defrags = set()
 longest_info = {"longest_page": "", "longest_page_num": 0}
 stopwords = set(line.strip() for line in open('stopwords.txt'))
 word_frequency = defaultdict(int)
-prev_hash = {}
 subdomains = set()
+fingerprints = set()
+robot_parsers = dict()
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -28,34 +30,49 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    if resp.status != 200:
-        print(resp.error)
-        return list()
-    
-    # TODO: iter.parse
-    # TODO: optimize robot
-    # TODO: use resp.raw_content.is_redirect?? -- "if there were any redirects, the final url is in resp.url instead of the parameter url."
-    # robots_file = url + '/robots.txt'
-    # rp = robotparser.RobotFileParser(robots_file)
-    # rp.read()
-    # if not rp.can_fetch("IR US24 23141678,14782048", url):
-    #     return list()
-    
-    # # TODO: Possible update: make a set of visited domains and only check robots.txt for each
-    # # unique domain, every url under that domain will fall under the same robots.txt. cache their object
-    # politeness_delay = rp.crawl_delay("IR US24 23141678,14782048")
-    # # respect the crawl delay of the robots.txt
-    # if politeness_delay:
-    #     time.sleep(politeness_delay)
 
     # Already visited this URL, avoiding infinite loops
-    if url in visited_urls:
+    if resp.url in visited_urls:
         return list()
     # Maintain a set of previously visited URLs
-    visited_urls.add(url)
+    visited_urls.add(resp.url)
+
+    # Handle page redirects with 301, 302 status codes
+    if resp.status not in (301, 302, 200):
+        return list()
+    
+    # If the page redirects, ensure that the redirected content is within the specified domains/pages
+    if resp.status in (301, 302):
+        if not is_valid(resp.url):
+            return list()
+
+    # Check if the domain has an already parsed robots.txt
+    domain_info = urlparse(resp.url).netloc
+    robot_parser = None
+    if domain_info not in robot_parsers: # If no, read it and store it in the cache
+        try:
+            robots_file = resp.url + '/robots.txt'
+            rp = robotparser.RobotFileParser(robots_file)
+            rp.read()
+            robot_parsers[domain_info] = rp
+            robot_parser = rp
+        except Exception as e:
+            # If the robots file fails to parse, skip
+            robot_parser = None
+    else: # If yes, pull the robotparser object from a cache
+        robot_parser = robot_parsers[domain_info]
+
+    if robot_parser and not robot_parser.can_fetch("IR US24 23141678,14782048", resp.url):
+        return list()
+
+    if robot_parser:
+        politeness_delay = robot_parser.crawl_delay("IR US24 23141678,14782048")
+        # respect the crawl delay of the robots.txt
+        if politeness_delay:
+            time.sleep(politeness_delay)
 
     # Splitting URL into fragments, we only care about the defragged url
-    defragged_url, throwaway = urldefrag(url)
+    defragged_url, throwaway = urldefrag(resp.url)
     # Counting all unique URLs with the fragment cut off
     if defragged_url not in visited_defrags:
         visited_defrags.add(defragged_url)
@@ -68,11 +85,13 @@ def extract_next_links(url, resp):
     words = [word.lower() for word in words if word.isalnum()]
 
     word_freq = get_word_frequencies(words) # Generate map of tokens and their # of occurrences
-    populate_longest_page_info(url, words) # Update global longest_page_info map with info about longest page so far
-    populate_unique_subdomains(url) # Update global set of unique subdomains
+    populate_longest_page_info(resp.url, words) # Update global longest_page_info map with info about longest page so far
+    populate_unique_subdomains(resp.url) # Update global set of unique subdomains
 
-    # If simhash on two pages generates similarity score > 0.8
-    if is_too_similar(word_freq):
+    current_fingerprint = simhash(word_freq) # Generate a fingerprint for current URL
+
+    # If fingerprint of current page generates similarity score > 0.85
+    if is_too_similar(current_fingerprint):
         return list()
 
 
@@ -90,6 +109,9 @@ def extract_next_links(url, resp):
     except Exception as e:
         pass
     
+    # Because we are crawling the page, add the fingerprint to the set of visited fingerprints
+    fingerprints.add(current_fingerprint)
+
     # All anchor tags in current URL
     a_links = soup.find_all('a')
     links = []
@@ -106,9 +128,8 @@ def extract_next_links(url, resp):
             continue
         
         # Join the relative path to the base path to create an absolute path
-        cur_url = urljoin(url, cur_url)
+        cur_url = urljoin(resp.url, cur_url)
 
-        # TODO: optimize?
         if is_valid(cur_url):
             links.append(cur_url)
 
@@ -120,7 +141,6 @@ def is_valid(url):
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
 
-    # TODO: optimize?
     valid_domains = ['.ics.uci.edu', '.cs.uci.edu', '.informatics.uci.edu', '.stat.uci.edu']
     
     try:
@@ -164,13 +184,14 @@ def get_word_frequencies(words: list):
     for k, v in word_freq.items():
         word_frequency[k] += v
 
-def is_too_similar(word_freq: dict):
-    # Compare the previous page to the current page using simhashing to check for similarity/duplicates
-    # Using a similarity percentage of 80% as the cutoff point
-    global prev_hash
-    sim_score = get_similarity_score(prev_hash, word_freq)
-    if prev_hash and sim_score > .8: # we choose .8 as our threshold here
-        return True
-    prev_hash = word_freq
+    return word_freq
+
+def is_too_similar(current_fingerprint: str):
+    # Compare the current page's fingerprint to the fingerprints of previous pages using simhashing to check for similarity/duplicates
+    # Using a similarity percentage of 85% as the cutoff point
+    for fingerprint in fingerprints:
+        sim_score = get_similarity_score(current_fingerprint, fingerprint) # Comparing current URL fingerprint against all others discovered so far
+        if sim_score > .85: # we choose .85 as our threshold here
+            return True
 
     return False
