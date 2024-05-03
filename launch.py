@@ -26,7 +26,7 @@ def main(config_file, restart):
                 break
         file.write("4. " + str(len(subdomains)) + "\n")
         for subdomain in sorted(subdomains):
-            count = 0
+            count = 1
             for defrag in visited_defrags:
                 if (subdomain + ".ics.uci.edu") in defrag:
                     count += 1

@@ -7,9 +7,9 @@ def simhash(token_map: dict) -> str:
     bit_map = dict()
 
     for word in token_map:
-        bit_map[word] = bin(0xFFFF & int(md5(word.encode()).hexdigest(), bits))[2:].zfill(bits) # 16 least significant bits
+        bit_map[word] = bin(0xFFFFFFFF & int(md5(word.encode()).hexdigest(), bits))[2:].zfill(bits) # 32 least significant bits
     
-    vector = [0] * bits # Vector with 16 zeroes
+    vector = [0] * bits # Vector with 32 zeroes
 
     # Looping through every word in the map {word -> binary}
     for k, v in bit_map.items():
@@ -27,7 +27,7 @@ def simhash(token_map: dict) -> str:
         else:
             vector[i] = "0"
 
-    return "".join(vector) # returns 16-bit fingerprint
+    return "".join(vector) # returns 32-bit fingerprint
 
 
 def get_similarity_score(fpA: str, fpB: str):
@@ -38,12 +38,12 @@ def get_similarity_score(fpA: str, fpB: str):
         if fpA[i] == fpB[i]: # if bit i is the same in both vectors
             similarity_count += 1
 
-    return similarity_count / bits # number of same bits in the same place / 16 bits
+    return similarity_count / bits # number of same bits in the same place / 32 bits
 
 
 if __name__ == "__main__":
     t1 = {"this": 1, "is": 1, "the": 1, "first": 1, "string": 1}
-    t2 = {"this": 1, "is": 1, "the": 1, "second": 1, "string": 1}
+    t2 = {"this": 1, "is": 1, "the": 1, "firs": 1, "string": 1}
 
     fingerprintA = simhash(t1)
     fingerprintB = simhash(t2)

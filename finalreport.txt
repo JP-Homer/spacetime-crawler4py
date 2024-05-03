@@ -1,0 +1,134 @@
+1. 5804 unique pages found.
+2. The longest page is http://www.ics.uci.edu/~eppstein/pubs/pubs.ff with 28937 words.
+3. The 50 most common words are: 
+hans -> 15482
+ics -> 11525
+new -> 10307
+will -> 10199
+information -> 9481
+research -> 8900
+p -> 7425
+support -> 7222
+public -> 7078
+data -> 7002
+class -> 6365
+computer -> 6266
+may -> 6181
+can -> 6161
+int -> 5655
+computing -> 5527
+xie -> 5362
+software -> 5128
+student -> 5040
+project -> 4928
+wiki -> 4900
+gitlab -> 4788
+repository -> 4689
+return -> 4607
+projects -> 4566
+maintenance -> 4549
+file -> 4514
+xhx -> 4454
+school -> 4385
+obj -> 4384
+students -> 4342
+science -> 4255
+june -> 4210
+static -> 4120
+final -> 4081
+sidebar -> 4040
+using -> 3982
+search -> 3932
+help -> 3884
+show -> 3777
+server -> 3753
+l -> 3733
+uci -> 3716
+content -> 3551
+graph -> 3499
+use -> 3432
+skip -> 3416
+view -> 3371
+systems -> 3370
+jasmin -> 3357
+4. 80
+https://accessibility.ics.uci.edu, 7
+https://acoi.ics.uci.edu, 68
+https://aiclub.ics.uci.edu, 2
+https://archive.ics.uci.edu, 11
+https://asterix.ics.uci.edu, 2
+https://betaproproteomics.ics.uci.edu, 1
+https://cbcl.ics.uci.edu, 181
+https://cdb.ics.uci.edu, 41
+https://cert.ics.uci.edu, 18
+https://checkin.ics.uci.edu, 2
+https://chemdb.ics.uci.edu, 2
+https://chenli.ics.uci.edu, 2
+https://circadiomics.ics.uci.edu, 7
+https://cml.ics.uci.edu, 27
+https://code.ics.uci.edu, 14
+https://computableplant.ics.uci.edu, 83
+https://containers.ics.uci.edu, 2
+https://create.ics.uci.edu, 8
+https://cybert.ics.uci.edu, 2
+https://dgillen.ics.uci.edu, 24
+https://elms.ics.uci.edu, 2
+https://emj.ics.uci.edu, 41
+https://evoke.ics.uci.edu, 4
+https://fr.ics.uci.edu, 4
+https://futurehealth.ics.uci.edu, 61
+https://gitlab.ics.uci.edu, 1418
+https://grape.ics.uci.edu, 48
+https://graphmod.ics.uci.edu, 2
+https://hack.ics.uci.edu, 2
+https://helpdesk.ics.uci.edu, 4
+https://hobbes.ics.uci.edu, 2
+https://hpi.ics.uci.edu, 4
+https://hub.ics.uci.edu, 3
+https://industryshowcase.ics.uci.edu, 11
+https://instdav.ics.uci.edu, 2
+https://ipubmed.ics.uci.edu, 2
+https://isg.ics.uci.edu, 101
+https://luci.ics.uci.edu, 5
+https://malek.ics.uci.edu, 2
+https://mcs.ics.uci.edu, 84
+https://mdogucu.ics.uci.edu, 2
+https://mds.ics.uci.edu, 12
+https://mhcid.ics.uci.edu, 17
+https://mlphysics.ics.uci.edu, 15
+https://motifmap.ics.uci.edu, 3
+https://motifmap-rna.ics.uci.edu, 2
+https://mse.ics.uci.edu, 2
+https://mswe.ics.uci.edu, 2
+https://muproproteomics.ics.uci.edu, 1
+https://nalini.ics.uci.edu, 8
+https://ngs.ics.uci.edu, 139
+https://onboarding.ics.uci.edu, 2
+https://pepitoproteomics.ics.uci.edu, 1
+https://pgadmin.ics.uci.edu, 3
+https://plrg.ics.uci.edu, 17
+https://psearch.ics.uci.edu, 2
+https://reactions.ics.uci.edu, 6
+https://riscit.ics.uci.edu, 3
+https://rstudio-hub.ics.uci.edu, 2
+https://scratchproteomics.ics.uci.edu, 1
+https://seal.ics.uci.edu, 7
+https://sli.ics.uci.edu, 306
+https://speedtest.ics.uci.edu, 2
+https://stairs.ics.uci.edu, 5
+https://statconsulting.ics.uci.edu, 2
+https://studentcouncil.ics.uci.edu, 3
+https://support.ics.uci.edu, 4
+https://svn.ics.uci.edu, 5
+https://swiki.ics.uci.edu, 1347
+https://tad.ics.uci.edu, 4
+https://tippersweb.ics.uci.edu, 3
+https://transformativeplay.ics.uci.edu, 16
+https://tutors.ics.uci.edu, 2
+https://ugradforms.ics.uci.edu, 2
+https://unite.ics.uci.edu, 11
+https://vision.ics.uci.edu, 198
+https://wics.ics.uci.edu, 2
+https://wiki.ics.uci.edu, 1349
+https://www.ics.uci.edu, 1043
+https://wwwinformatics.ics.uci.edu, 1

@@ -79,6 +79,8 @@ def extract_next_links(url, resp):
 
 
     # Soup object made out of current URL HTML content
+    if resp.raw_response is None or resp.raw_response.content is None:
+        return list()
     soup = bs(resp.raw_response.content, 'lxml')
     text = soup.get_text()
     words = text.split()
